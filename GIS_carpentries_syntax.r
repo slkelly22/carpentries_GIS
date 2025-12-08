@@ -16,10 +16,11 @@ library(sf)
 
 # Import shapefiles
 boundary_Delft <- st_read("data/delft-boundary.shp", quiet = FALSE) 
+st_read("data/delft-boundary.shp")
 
 # gives us information about the geometry type: polygon
 # sf package supports these geometries: point, linestring, polygon, multipoint, multilinestring, etc. 
-st_geometry_type(boundary_Delft)
+st_geometry_type(boundary_Delft) # polygon
 
 st_crs(boundary_Delft) # returns the coordinate reference system (CRS) used by the shapefile
 
@@ -46,4 +47,57 @@ ggplot(data = boundary_Delft) + geom_sf(size = 1, color = "black", fill = "cyan1
   labs(title = "Delft Administrative Boundary") + 
   coord_sf(datum = st_crs(28992)) #displays the axes in meters
 
+################################
+# Episode 7: Explore and Plot by Vector Layer Attributes
 
+lines_Delft # ??? This doesn't pull up anything
+## Ah ha! it's a challenge activity from the previous episode
+## Give FEEDBACK to creators
+
+# Challenge Activity from Episode 6 (need objects for ep 7)
+# read in delft-streets.shp and delft-leisure
+lines_Delft <- st_read("data/delft-streets.shp") 
+points_Delft <- st_read("data/delft-leisure.shp")
+lines_Delft
+points_Delft
+
+# Back to Episode 7
+lines_Delft # we can examine and manipulate like a df
+ncol(lines_Delft)
+names(lines_Delft)
+head(lines_Delft)
+
+head(lines_Delft$highway, 10)
+unique(lines_Delft$highway)
+
+# this is showing another way for unique values by treating it as a factor
+factor(lines_Delft$highway) |> levels() # note alphabetical ordering and NAs gone
+
+# Challenge: Explore point_Delft
+points_Delft
+names(points_Delft)
+unique(points_Delft$leisure)
+factor(points_Delft$leisure) |> levels()
+
+# Subset Features
+# Note: previous exercise used different df
+names(lines_Delft) # refreshing what I looked at before
+# Select only cycleways from the lines data
+cycleway_Delft <- lines_Delft |> 
+  filter(highway == "cycleway")
+dim(cycleway_Delft)
+
+# Calculate the total length of cycleways
+# First we need to calculate the length of each segment with st_length()
+cycleway_Delft <- cycleway_Delft |> 
+  mutate(length = st_length(geometry)) # wow, that's cool
+
+cycleway_Delft |> 
+  summarize(total_length = sum(length)) 
+# Feedback to creators: give more context here about the total length
+
+# Plot only the cycleways
+ggplot(cycleway_Delft) + geom_sf() +
+  labs(title = "Slow mobility network in Delft", 
+       subtitle = "Cycleways") +
+  coord_sf(datum = st_crs(28992))
