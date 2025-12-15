@@ -5,7 +5,7 @@
 # Day 2 AM: Episodes 6 (Abbie), 7 (Shelby)
 # Day 2 PM: Episodes 8 (Shelby), 9 (Savannah), 15 (Shelby)
 
-# Skipping Episodes 1-5 For Now
+# Skipping Episodes 1-3 For Now
 
 ###############################
 # Episode 4 (I'm teaching)
@@ -27,7 +27,7 @@ gapminder |>
   ggplot(aes(x = country, y = gdpPercap)) + 
   geom_col()
   
-# flip that plot
+# flip the plot
 gapminder |> 
   filter(year == 2007 & continent == "Americas") |> 
   ggplot(aes(x = country, y = gdpPercap)) + 
@@ -39,15 +39,113 @@ gapminder |>
 # order levels will depend on another variable - gdpPercap
 gapminder |> 
   filter(year == 2007 & continent == "Americas") |> 
-  mutate(country = fct_reorder(country, gdpPercap)) |> # note the mutate (not perm)
+  mutate(country = fct_reorder(country, gdpPercap)) |> # note the mutate (not permanent)
   ggplot(aes(x = country, y = gdpPercap)) + 
   geom_col() + 
   coord_flip()
 
-str(gapminder$country)
+# representing lifeExp with color
+gapminder |> 
+  filter(year == 2007 & continent == "Americas") |> 
+  mutate(country = fct_reorder(country, gdpPercap)) |> 
+  ggplot(aes(x = country, y = gdpPercap, fill = lifeExp)) + 
+  # explain fill versus color
+  geom_col() + coord_flip()
+
+# changing color; popular choice for readability and colorblind is viridis package
+# NOTE: don't they need to install viridis package? I have viridis package but scale_fill_viridis_c is listed as a function within ggplot so maybe they don't need the viridis package?
+
+gapminder |> 
+  filter(year == 2007 & continent == "Americas") |> 
+  mutate(country = fct_reorder(country, gdpPercap)) |> 
+  ggplot(aes(x = country, y = gdpPercap, fill = lifeExp)) + 
+  geom_col() + 
+  coord_flip() + 
+  scale_fill_viridis_c() # c stands for continuous scale
+
+# we want to know above or below average life expectancy
+# use if_else within mutate to create new variable lifeExpCat
+# if_else(condition, value if true, value if false)
+# note: they are also adding a new function: scale_fill_manual
+# SK Change: They save plot as an object, but I'm going to create it (so they can see it), and then save the plot
+
+# step 1: build the plot so we can see it
+gapminder |> 
+  filter(year == 2007 & continent == "Americas") |> 
+  mutate(
+    country = fct_reorder(country, gdpPercap), 
+    lifeExpCat = if_else(
+      lifeExp >= mean(lifeExp), 
+      "high", 
+      'low')) |> 
+  ggplot(aes(x = country, y = gdpPercap, fill = lifeExpCat)) + 
+  geom_col() + 
+  coord_flip() + 
+  scale_fill_manual(values = c("lightblue", "orange")) #report error to creators: there was a space in blue color
+
+# step 2: same thing, but save as an object
+# content calls plot only "p" but I'm calling "avg_life_plot"
+avg_life_plot <- gapminder |> 
+  filter(year == 2007 & continent == "Americas") |> 
+  mutate(
+    country = fct_reorder(country, gdpPercap), 
+    lifeExpCat = if_else(
+      lifeExp >= mean(lifeExp), 
+      "high", 
+      'low')) |> 
+  ggplot(aes(x = country, y = gdpPercap, fill = lifeExpCat)) + 
+  geom_col() + 
+  coord_flip() + 
+  scale_fill_manual(values = c("lightblue", "orange"))
+
+# adding title, legend, axes
+avg_life_plot <- avg_life_plot + labs(
+  title = "GPD per capita in Americas", 
+  subtitle = "Year 2007", 
+  x = "Country", 
+  y = "GDP per capita", 
+  fill = "Life Expectancy categories"
+)
+
+# view plot
+avg_life_plot
+
+# saving the plot
+## NOTE: did we set up this file structure in the earlier lessons and there "here"?
+# I'm not running the following code b/c I know it won't work without the file structure
+ggsave(plot = avg_life_plot, filename = here("fig_output", "plot_americas_2007.pdf"))
+
+# I'll save it like this for now
+ggsave("americas_plot.pdf")
+# that looks bad as a pdf and the Carp content said it would look bad and to run ??ggsave; I think they should REVISE that
+
+# we'll just save as a png
+ggsave("americas_plot.png")
+?ggsave
+
+# Saving the americas dataset and writing out as a csv
+gapminder_amr_2007 <- gapminder |> 
+  filter(year == 2007 & continent == "Americas") |> 
+  mutate(
+    country_reordered = fct_reorder(country, gdpPercap), # sk: now they're using a new column name
+    lifeExpCat = if_else(lifeExp >= mean(lifeExp), "high", "low")
+  )
+
+# UGH, SWITCH THIS: saving with Base R and here 
+write.csv(gapminder_amr_2007, 
+          here("data_output", "gapminder_americas_2007.csv"), 
+          row.names = FALSE)
+
+# CHANGE  - Use Tidy and not the here function
+# this way is more straightforward (but we might need to use here if we don't set up an R Project in the beginning of the lessons...check)
+write_csv(gapminder_amr_2007, "gapminder_americas_2007.csv")
 
 ################################
-# Episode 6: Open and Plot Vector Layers
+# Episode 5: Introduction to Geospatial Concepts (Abbie)
+# No R Code in this episode
+
+################################
+# Episode 6: Open and Plot Vector Layers (Abbie)
 
 # load the required packages
 library(tidyverse)
@@ -87,7 +185,7 @@ ggplot(data = boundary_Delft) + geom_sf(size = 1, color = "black", fill = "cyan1
   coord_sf(datum = st_crs(28992)) #displays the axes in meters
 
 ################################
-# Episode 7: Explore and Plot by Vector Layer Attributes
+# Episode 7: Explore and Plot by Vector Layer Attributes (Shelby)
 
 lines_Delft # ??? This doesn't pull up anything
 ## Ah ha! it's a challenge activity from the previous episode
