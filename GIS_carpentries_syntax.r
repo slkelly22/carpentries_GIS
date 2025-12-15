@@ -7,6 +7,45 @@
 
 # Skipping Episodes 1-5 For Now
 
+###############################
+# Episode 4 (I'm teaching)
+# Introduction to Visualization
+# gg stands for grammar of graphs
+# three components: data, aesthetics (coordinate system), geometries
+
+library(tidyverse)
+# ?? Was gapminder installed and loaded in a previous lesson ??
+library(gapminder)
+
+# plot distribution of life expetancy
+ggplot(data = gapminder, 
+       aes(x = lifeExp)) + geom_histogram()
+
+# plot with subset of observations
+gapminder |> 
+  filter(year == 2007 & continent == "Americas") |> 
+  ggplot(aes(x = country, y = gdpPercap)) + 
+  geom_col()
+  
+# flip that plot
+gapminder |> 
+  filter(year == 2007 & continent == "Americas") |> 
+  ggplot(aes(x = country, y = gdpPercap)) + 
+  geom_col() + 
+  coord_flip()
+# ordered alphabetically but might want to compare gdpPercap
+# need to reorder factor levels (similar to earlier episode...check)
+
+# order levels will depend on another variable - gdpPercap
+gapminder |> 
+  filter(year == 2007 & continent == "Americas") |> 
+  mutate(country = fct_reorder(country, gdpPercap)) |> # note the mutate (not perm)
+  ggplot(aes(x = country, y = gdpPercap)) + 
+  geom_col() + 
+  coord_flip()
+
+str(gapminder$country)
+
 ################################
 # Episode 6: Open and Plot Vector Layers
 
