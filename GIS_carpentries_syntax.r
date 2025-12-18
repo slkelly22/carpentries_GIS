@@ -231,10 +231,103 @@ cycleway_Delft <- cycleway_Delft |>
 
 cycleway_Delft |> 
   summarize(total_length = sum(length)) 
+# 115550.1[m] in console (hard to see)
 # Feedback to creators: give more context here about the total length
 
 # Plot only the cycleways
-ggplot(cycleway_Delft) + geom_sf() +
+ggplot(data = cycleway_Delft) + 
+  geom_sf() +
   labs(title = "Slow mobility network in Delft", 
        subtitle = "Cycleways") +
   coord_sf(datum = st_crs(28992))
+
+## Challenge: Now with motorways
+# 1. Create anew object that only contains the motorways in Delft
+motorways_Delft <- lines_Delft |> 
+  filter(highway == "motorway")
+
+# 2. How many features does the new object have? 
+nrow(motorways_Delft) # 48
+
+# 3. What is the total length of motorways? 
+motorways_Delft <- motorways_Delft |> 
+  mutate(length = st_length(geometry))
+
+motorways_Delft |> 
+  summarize(total_length = sum(length)) # 14877.44 [m]
+
+# in the answer, they did this in one step like below: 
+motorway_Delft_length <- motorways_Delft |> 
+  mutate(length = st_length(geometry)) |> 
+  select(everything(), geometry) |> # this line is unnecessary
+  summarize(total_length = sum(length)) # same number I got above
+
+# 4. Plot the motorways
+ggplot(motorways_Delft) + 
+  geom_sf() +
+  labs(title = "Fast mobility network in Delft", 
+       subtitle = "Motorways") +
+  coord_sf(datum = st_crs(28992))
+
+## Customize Plots
+unique(lines_Delft$highway) # we're going to add distinct colors to four types
+
+# watch how they use road_types
+road_types <- c("motorway", "primary", "secondary", "cycleway")
+
+lines_Delft_selection <- lines_Delft |> # note this is new object
+  filter(highway %in% road_types) |> # see how they used the object; they could also just list the 4 types
+  mutate(highway = factor(highway, levels = road_types)) # also used road_types as the fct levels
+
+# they are adding colors like this?
+road_colors <- c("blue", "green", "navy", "purple")
+
+# now creating the plot with the different colors
+ggplot(lines_Delft_selection) + 
+  geom_sf(aes(color = highway)) + # technically this is all you need for colors
+  scale_color_manual(values = road_colors) + # the blue and navy are hard to differentiate
+  labs(
+    color = "Road Type", 
+    title = "Mobility Network of Delft", 
+    subtitle = "Main Roads & Cycleways"
+  ) +
+  coord_sf(datum = st_crs(28992))
+
+## Challenge Activity
+# Again, why this way? 
+line_widths <- c(1, 0.75, 0.5, 0.25)
+
+ggplot(lines_Delft_selection) + 
+  geom_sf(aes(color = highway, linewidth = highway)) + # add linewidth and below
+  scale_color_manual(values = road_colors) + 
+  scale_linewidth_manual(values = line_widths) + # see this function***
+  labs(
+    color = "Road Type", 
+    linewidth = "Road Type",  # interestingly, merges the two legends
+    title = "Mobility Network of Delft", 
+    subtitle = "Main Roads & Cycleways"
+  ) +
+  coord_sf(datum = st_crs(28992))
+
+## Challenge Activity
+# first create a df where only roads where bicycles are allowed
+lines_Delft_bicycle <- lines_Delft |> 
+  filter(highway == "cycleway")
+
+# plot - note the two dfs being called in different sections!
+ggplot(lines_Delft) + # that's the main df we've used
+  geom_sf() + # this is empty
+  geom_sf(
+    data = lines_Delft_bicycle, # that's the smaller df we just created
+    aes(color = highway), 
+    linewidth = 1
+  ) + 
+  scale_color_manual(values = "magenta") + 
+  labs(
+    title = "Mobility network in Delft", 
+    subtitle = "Roads dedicated to Bikes") + 
+  coord_sf(datum = st_crs(28992))
+
+
+################################
+# Episode 8: Plot Multiple Shapefiles (Shelby)
