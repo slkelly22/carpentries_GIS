@@ -331,3 +331,116 @@ ggplot(lines_Delft) + # that's the main df we've used
 
 ################################
 # Episode 8: Plot Multiple Shapefiles (Shelby)
+
+# We've been plotting with a single shapefile, but what if we wanted to use multiple? 
+# We will create a plot that combines our leisure locations, municipal boundary, and street objects. Also build a custom legend
+
+# To begin, we'll create a plot with the site boundary as the first layer. Then layer the leisure locations and street data on top in consecutive calls to geom_sf
+
+ggplot() + 
+  geom_sf(data = boundary_Delft, 
+          fill = "lightgrey", 
+          color = "lightgrey") + 
+  geom_sf(
+    data = lines_Delft_selection, 
+    aes(color = highway), 
+    size = 1
+  ) + 
+  geom_sf(
+    data = points_Delft) + # I named by oject with an s on points, lesson has point
+  labs(title = "Mobility network of Delft") + 
+  coord_sf(datum = st_crs(28992))
+  
+# building a custom legend
+
+points_Delft$leisure <-factor(points_Delft$leisure)
+levels(points_Delft$leisure)
+levels(points_Delft$leisure) |> length() # 15
+# rainbow function....Oh, okay! 
+?rainbow
+leisure_colors <- rainbow(15)
+
+# plotting
+ggplot() + 
+  geom_sf(
+    data = boundary_Delft, 
+    fill = "lightgrey", 
+    color = "lightgrey") + 
+  geom_sf(
+    data = lines_Delft_selection, 
+    aes(color = highway), 
+    size = .5) + # I changed the size from 1 to .5 b/c that looks better (and more like the example)
+  geom_sf(
+    data = points_Delft, 
+    aes(fill = leisure), 
+    shape = 21) + 
+  scale_color_manual(
+    values = road_colors, 
+    name = "Road Type") + 
+  scale_fill_manual(
+    values = leisure_colors, 
+    name = "Leisure Location") + 
+  labs(title = "Mobility network and leisure in Delft") + 
+  coord_sf(datum = st_crs(28992))
+
+## Challenge
+# What value of shape will disply points as squares with custom fills? 
+# shape 22; how do you know? grab the ggplot cheat sheet from the Help menu
+ggplot() + 
+  geom_sf(
+    data = boundary_Delft, 
+    fill = "lightgrey", 
+    color = "lightgrey") + 
+  geom_sf(
+    data = lines_Delft_selection, 
+    aes(color = highway), 
+    size = .5) + # I changed the size from 1 to .5 b/c that looks better (and more like the example)
+  geom_sf(
+    data = points_Delft, 
+    aes(fill = leisure), 
+    shape = 22) + 
+  scale_color_manual(
+    values = road_colors, 
+    name = "Road Type") + 
+  scale_fill_manual(
+    values = leisure_colors, 
+    name = "Leisure Location") + 
+  labs(title = "Mobility network and leisure in Delft") + 
+  coord_sf(datum = st_crs(28992))
+
+## Challenge
+# Create a map of leisure locations only including playground and picnic table, etc. 
+# There's more than one way to do this, but this is how they did it: 
+
+# NOTE: how they filtered as they imported...
+leisure_locations_selection <- st_read("data/delft-leisure.shp") |> 
+  filter(leisure %in% c("playground", "picnic_table")) 
+
+# checking the levels
+factor(leisure_locations_selection$leisure) |> levels() # picnic_table, playground
+
+# setting a color 
+blue_orange <- c("cornflowerblue", "darkorange")
+
+# plotting
+ggplot() + 
+  geom_sf(
+    data = lines_Delft_selection, 
+    aes(color = highway)) + 
+  geom_sf(
+    data = leisure_locations_selection, 
+    aes(fill = leisure, shape = leisure)) + 
+  scale_shape_manual( # NOTE this function scale_shape_manual!
+    name = "Leisure Type", 
+    values = c(21, 22)) + 
+  scale_color_manual(
+    name = "Line Type", 
+    values = road_colors) + 
+  scale_fill_manual(
+    name = "Leisure Type", 
+    values = blue_orange) + 
+  labs(title = "Road network and leisure") + 
+  coord_sf(datum = st_crs(28992))
+  
+################################
+# Episode 9: Handling Spatial Projections and CRS (Savannah)
