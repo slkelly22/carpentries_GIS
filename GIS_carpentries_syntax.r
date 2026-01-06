@@ -444,3 +444,98 @@ ggplot() +
   
 ################################
 # Episode 9: Handling Spatial Projections and CRS (Savannah)
+
+# We're reading in new data - Dutch Municipal Boundaries
+municipal_boundary_NL <- st_read("data/nl-gemeenten.shp")
+
+# plotting
+ggplot() + 
+  geom_sf(data = municipal_boundary_NL) + 
+  labs(title = "Map of Continguous NL Municipal Boundaries") + 
+  coord_sf(datum = st_crs(28992))
+
+# Now we're going to add a country boundary layer to make it look nicer 
+# need to read that data in first
+country_boundary_NL <- st_read("data/nl-boundary.shp")
+
+# now we'll add both together
+ggplot() + 
+  geom_sf(
+    data = country_boundary_NL, 
+    color = "grey18", 
+    linewidth = 2) + 
+  geom_sf(
+    data = municipal_boundary_NL, 
+    color = "gray40") + 
+  labs(title = "Map of Continguous NL Municipal Boundaries") + 
+  coord_sf(datum = st_crs(28992))
+
+# Confirming that the CRS of both boundaries is 28992
+# they do this
+st_crs(municipal_boundary_NL)$epsg # 28992
+st_crs(country_boundary_NL)$epsg # 28992
+# but we could also do this like I saw in UCSB
+st_crs(municipal_boundary_NL) == st_crs(country_boundary_NL) # TRUE
+
+# they read in delft boundary again but it's already loaded from earlier
+# boundary_Delft <- st_read("data/delft-boundary.shp")
+boundary_Delft
+st_crs(boundary_Delft)$epsg # NOTE: this is not 28992, it's 4326
+
+# they don't give context but the code is changing the CRS it seems
+# SK: what would happen if we didn't do this? 
+boundary_Delft <- st_transform(boundary_Delft, 28992)
+
+# plotting - nice, entire country with Delph area in purple
+ggplot() + 
+  geom_sf(
+    data = country_boundary_NL, 
+    linewidth = 2, color = "grey18") + 
+  geom_sf(
+    data = municipal_boundary_NL, 
+    color = "grey40") + 
+  geom_sf(
+    data = boundary_Delft, 
+    color = "purple", fill = "purple") + 
+  labs(title = "Map of Contiguous NL Municipal Boundaries") + 
+  coord_sf(datum = st_crs(28992))
+  
+# Challenge: Plot Multiple Layers of Spatial Data - SKIP? 
+# Create a map of South Holland
+# This is tricky b/c of the Dutch Context!
+# I'm just walking through their answer 
+
+boundary_ZH <- municipal_boundary_NL |> 
+  filter(ligtInPr_1 == "Zuid-Holland")
+
+# don't love the idea of explaining this code...
+ggplot() + 
+  geom_sf(
+    data = boundary_ZH, 
+    aes(color = "color"), # what is this? I think it's linking up below...
+    show.legend = "line") + 
+  scale_color_manual(
+    name = "", # what is this? 
+    labels = "Municipal Boundaries in South Holland", 
+    values = c("color" = "gray18")) + 
+  geom_sf(
+    data = boundary_Delft, 
+    aes(shape = "shape"), 
+    color = "purple", 
+    fill = "purple") + 
+  scale_shape_manual(
+    name = "", # ?
+    labels = "Municipality of Delft", 
+    values = c("shape" = 19)) + 
+  labs(title = "Delft location") + 
+  theme(theme.background = element_rect(color = NA)) + # what??
+  coord_sf(datum = st_crs(28992))
+# YIKES. Didn't love that
+
+# Export a shapefile
+# st_write() function; sf guesses the driver but we can make it explicit
+# I'm not running this because I ran it already in the UCSB lesson and don't want 4 duplicate files; note: in the UCSB lesson, it's under the data_output folder
+# st_write(leisure_locations_selection, "data/leisure_locations_selection.shp", driver = "ESRI Shapefile")
+  
+################################
+# Episode 15: Import and Visualise OSM Data (Shelby)
