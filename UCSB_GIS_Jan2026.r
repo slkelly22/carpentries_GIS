@@ -208,3 +208,151 @@ st_write(leisure_locations_selection, "data_output/leisure_location_selection.sh
 # whoa! That created four different files
 # That's where we're ending today
 # note: you can only do one scale_color_manual per ggplot function
+
+#######################################################################################
+# Day 3, January 8, 11:30 - 2:00
+
+# he's quickly going through lesson 9 content
+ggplot() + 
+  geom_sf(data = municipal_boundary_NL) + 
+  labs(title = "Map of Continguous NL Municipal Boundaries")
+
+# coloring Delft in purple
+ggplot() +
+  geom_sf(
+    data = country_boundary_NL,
+    linewidth = 2,
+    color = "gray18"
+  ) +
+  geom_sf(
+    data = municipal_boundary_NL,
+    color = "gray40"
+  ) +
+  geom_sf(
+    data = boundary_Delft,
+    color = "purple",
+    fill = "purple"
+  ) +
+  labs(title = "Map of Contiguous NL Municipal Boundaries") +
+  coord_sf(datum = st_crs(28992))
+# if you don't transform to align the CRS it can look strange, projections is off, etc. 
+
+
+###############################
+# Episode 10: Introduction to Raster Data
+# Note: This is all new for me (haven't worked through before)
+
+library(tidyverse)
+library(terra) # sf package for vector data, terra package for raster data
+
+# two datasets, one is elevation and other is aerial photos (?)
+
+# describe function from terra
+describe("data/tud-dtm-5m.tif")
+
+# now loading it
+DSM_TUD <- rast("data/tud-dtm-5m.tif")
+DSM_TUD
+
+summary(DSM_TUD) # goes up to 16 meters above sea level; mean is a little below sea level
+# DSM is digital surface model (vs. DTM, digital terrain model) and captures how high things are...
+
+# turning this into a dataframe
+DSM_TUD_df <- as.data.frame(DSM_TUD, xy = TRUE) 
+# cool, now you can open the object in your environment
+
+str(DSM_TUD_df)
+
+# plot raster data using ggplot
+ggplot() + 
+  geom_raster(data = DSM_TUD_df, aes(x = x, y = y, fill = `tud-dtm-5m`)) + # geom_raster
+  scale_fill_viridis_c(option = "turbo") + 
+  coord_equal() # you lose coordinate ref system when you turned into a df so you add 'coord_equal' here
+# this is cool
+
+# crs() to look at metadata
+crs(DSM_TUD, proj = TRUE)
+
+# Challenge Exercise
+describe('data/tud-dsm-hill.tif') # that's an error in the instructors, should be below file
+describe("data/tud-dsm-5m-hill.tif") # CRS is EPSG,28992 (see under "USAGE")
+
+#######################
+# Episode 11: Plot Raster Data # 
+
+# Modify our raster to create a new map/plot
+# Break our values into three groups
+
+DSM_TUD_df <- DSM_TUD_df |> 
+  mutate(fct_elevation = cut(`tud-dtm-5m`, breaks = 3)) # error in the instructions (had dtm)
+
+unique(DSM_TUD_df$fct_elevation)
+
+ggplot() + 
+  geom_bar(data = DSM_TUD_df, aes(x = fct_elevation)) # barplot to see how many pixals are in each group
+
+ggplot() + 
+  geom_raster(data = DSM_TUD_df, aes(x = x, y = y, fill = fct_elevation)) + 
+  coord_equal() # okay, but not great so let's do different breaks in the raster
+
+# Make a similar raster plot but breaking the continuous elevation values into six groups
+DSM_TUD_df <- DSM_TUD_df |> 
+  mutate(fct_elevation_6 = cut(`tud-dtm-5m`, breaks = 6))
+
+ggplot() + 
+  geom_raster(data = DSM_TUD_df, aes(x = x, y = y, fill = fct_elevation_6)) + 
+  coord_equal()
+
+# Note: you can also create custom breaks
+custom_breaks <- c(-10, 0, 5, 20)
+DSM_TUD_df <- DSM_TUD_df |> 
+  mutate(fct_elevation_cb = cut(`tud-dtm-5m`, breaks = custom_breaks))
+
+# now plotting with those custom breaks
+ggplot() + 
+  geom_raster(data = DSM_TUD_df, aes(x = x, y = y, fill = fct_elevation_cb)) + 
+  coord_equal()
+
+#########################
+# Episode 12: Reproject Raster Data
+# You want things to have the same CRS
+# How to work with raster data in different projections
+# Digital Surface Model (captures elevation) and Digital Terrain Model (surface level)
+
+# We have DSM loaded now need to load DTM
+DTM_TUD <- rast("data/tud-dtm-5m.tif")
+DTM_hill_TUD <- rast("data/tud-dtm-5m-hill-WGS84.tif")
+
+# Find out CRS of raster datasets
+crs(DTM_TUD, proj = TRUE)
+crs(DTM_hill_TUD, proj = TRUE)
+# they are different
+
+crs(DTM_hill_TUD) == crs(DTM_TUD) # they didn't show but I like this approach; FALSE
+
+# transform to df
+DTM_TUD_df <- as.data.frame(DTM_TUD)
+DTM_hill_TUD_df <- as.data.frame(DTM_hill_TUD)
+
+## Reproject hill shade to the DTM CRS
+# project function from terra
+DTM_hill_EPSG29882_TUD <- project(DTM_hill_TUD, crs(DTM_TUD))
+
+DTM_hill_EPSG29882_TUD_df <- as.data.frame(DTM_hill_EPSG29882_TUD, xy = TRUE)
+
+# he was cutting and pasting and I didn't get that below
+# switching instructors
+
+##################################
+# Episode 14
+library(raster)
+install.packages("raster") # we need this package but it's not in the Carp install instructions
+describe("data/tudlib-rgb.tif") # pay attention to the colors
+
+RGB_stack_TUD <- rast("data/tudlib-rgb.tif")
+
+plotRGB(RGB_stack_TUD, r = 1, g = 2, b = 3) # WOW, that looks like a photograph!
+
+
+
+
