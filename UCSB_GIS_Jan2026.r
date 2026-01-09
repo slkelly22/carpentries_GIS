@@ -354,5 +354,175 @@ RGB_stack_TUD <- rast("data/tudlib-rgb.tif")
 plotRGB(RGB_stack_TUD, r = 1, g = 2, b = 3) # WOW, that looks like a photograph!
 
 
+#######################################################################################
+# Day 4, January 9, 11:30 - 2:00
 
+# Episode 13
+# Canopy Height Models
+# Digital Terrain Model (DTM) = Base Earth = Final Return
+# Digital Surface Model (DSM) = Covered Earth = First Return = Tree/Building Tops
+# Canopy Height Model (CHM) = DSM - DTM (tops of tress - surface of earth)
+
+library(terra)
+library(tidyverse)
+
+describe("data/tud-dtm-5m.tif") #raster data
+describe("data/tud-dsm-5m.tif")
+
+# importing with rast function
+DTM_TUD <- rast("data/tud-dtm-5m.tif")
+DSM_TUD <- rast("data/tud-dsm-5m.tif")
+
+# test the projections
+# important to check this before you turn them into dataframe b/c then that info is lost
+crs(DTM_TUD) == crs(DSM_TUD) # TRUE; is the crs of the terrain model equal to the crs of the surface model? Yes
+
+# convert to a df
+DTM_TUD_df <- as.data.frame(DTM_TUD, xy = TRUE) # DON'T FORGET THAT ARGUMENT!
+DSM_TUD_df <- as.data.frame(DSM_TUD, xy = TRUE)
+
+# plot - remember geom_raster() not geom_sf()
+ggplot() + 
+  geom_raster(
+    data = DTM_TUD_df, 
+    aes(x = x, y = y, fill = `tud-dtm-5m`) # note: it wants the back tics
+  ) + 
+  scale_fill_gradientn(colors = terrain.colors(10))
+
+ggplot() + 
+  geom_raster(
+    data = DSM_TUD_df, 
+    aes(x = x, y = y, fill = `tud-dsm-5m`) # note: it wants the back tics
+  ) + 
+  scale_fill_gradientn(name = "DSM: tree tops", colors = terrain.colors(10))
+
+
+# the math
+CHM_TUD_df <- DSM_TUD_df - DTM_TUD_df # creating the canopy height value, NOPE; you can't use the dfs, you have the use the original rasters
+# REDO, THEY DID THIS WRONG ABOVE
+# This is correct below
+CHM_TUD <- DSM_TUD - DTM_TUD
+CHM_TUD_df <- as.data.frame(CHM_TUD, xy = TRUE)
+
+
+# renaming that tricky column
+CHM_TUD_df$canopy <- CHM_TUD_df$`tud-dsm-5m`
+# or this
+CHM_TUD_df <- CHM_TUD_df |> 
+  rename(canopy = `tud-dsm-5m`)
+
+# Plotting the Canopy Model
+ggplot() + 
+  geom_raster(
+    data = CHM_TUD_df, 
+    aes(x = x, y = y, fill = canopy) # note: it wants the back tics
+  ) + 
+  scale_fill_gradientn(name = "DSM: tree tops", colors = terrain.colors(10))
+
+summary(CHM_TUD_df)
+
+# saving geotiffs
+writeRaster(CHM_TUD, "data_output/CHM_TUD.tiff", 
+            filetype = "GTiff", 
+            overwrite = TRUE)
+
+
+##################################
+# Episode 15: Import and Visualize OSM (Open Street Map) Data
+
+install.packages(c("osmdata", "leaflet", "lwgeom", "units"))
+library(tidyverse)
+library(sf)
+library(osmdata)
+
+# magic line from lesson
+assign("has_internet_via_proxy", TRUE, environment(curl::has_internet))
+
+# let's get a bounding box
+bb <- osmdata::getbb("Brielle")
+bb
+
+# get data inside our bounding box
+# opq function; query function
+
+x <- opq(bbox = bb) |> 
+  add_osm_feature(key = "building") |> 
+  osmdata_sf()
+
+str(x)
+buildings <- x$osm_polygons
+start_date <- as.numeric(buildings$start_date)
+summary(start_date)
+unique(start_date)
+
+# highlight anything older than 1900
+start_date <- as.numeric(buildings$start_date)
+buildings$build_date <- if_else(start_date < 1900, 1900, start_date)
+
+# ggplot
+ggplot(data = buildings) + 
+  geom_sf() # that's cool
+
+ggplot(data = buildings) + 
+  geom_sf(aes(fill = build_date, color = build_date)) + 
+  scale_fill_viridis_c() + 
+  scale_color_viridis_c() #this gets rid of that second legend
+
+
+#########
+# oxford ms playing
+bb_wh <- osmdata::getbb("38655")
+bb_wh
+
+oxford <- opq(bbox = bb_wh) |> 
+  add_osm_feature(key = "building") |> 
+  osmdata_sf()
+
+
+buildings_oxford <- oxford$osm_polygons
+start_date <- as.numeric(buildings_oxford$start_date)
+buildings_oxford$build_date <- if_else(start_date < 1900, 1900, start_date)
+
+# plot oxford! YAY!!!!
+ggplot(data = buildings_oxford) + 
+  geom_sf()
+
+ggplot(data = buildings_oxford) + 
+  geom_sf(aes(fill = building)) + 
+  scale_fill_discrete() 
+# scale_fill_viridis_d() # I believe the d is for discrete so this works too (the viridis_c is for continuous)
+
+### Back to Instructor
+old <- 1800
+old_buildings <- buildings |> 
+  filter(start_date <= old)
+
+ggplot(data = old_buildings) + 
+  geom_sf(colour = "red") + 
+  coord_sf(datum = st_crs(28992))
+
+distance <- 100
+buffer_old_buildings <- st_buffer(x = old_buildings, dist = distance)
+
+ggplot(data = buffer_old_buildings) +
+  geom_sf()
+
+# I'm copying and pasting directly now from the lesson...
+single_old_buffer <- st_union(buffer_old_buildings) |>
+  st_cast(to = "POLYGON") |>
+  st_as_sf()
+
+single_old_buffer <- single_old_buffer |>
+  mutate("ID" = as.factor(seq_len(nrow(single_old_buffer)))) |>
+  st_transform(crs = 28992)
+
+sf::sf_use_s2(FALSE) # switching off spherical geometry
+
+centroids_old <- st_centroid(old_buildings) |> 
+  st_transform(crs = 28992)
+
+ggplot() +
+  geom_sf(data = single_old_buffer, aes(fill = ID)) +
+  geom_sf(data = centroids_old) +
+  coord_sf(datum = st_crs(28992))
 
