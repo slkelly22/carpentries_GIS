@@ -161,5 +161,47 @@ gapminder |>
 ## I taught
 
 ## Abbie teaching
+# using Canva slides
+# GIS - Geographic Information System(s)
+# ArcGIS, QGIS (open source), OSM Open Street Maps (open source)
+# geospatial data is data that includes information related to locations on the Earth's surface
+
+# an ellipsoid (slightly wider than tall); the geoid
+# latitude (north | south); equator 0 degrees; -90 to + 90
+# longitude (east | west); -180 to + 180; prime meridian in Greenwich Enggland
+
+# Map projections: Cylindrical, Conical, Azimuthal (more distorted)
+
+# Map projection properties: conformal (preserves the correct shape of small areas; Africa and greenland look like the same size in this one)
+# and equal-area (best for preserving distances; Africa is much bigger than greenland)
+
+# CRS - Coordinate Reference Systems - coordinate based (Lat. and Long. systems) for locating geographic entities, which uses a specific map projection
+# Most popular CRS is WGS - World Geodetic System 84 (EPSG:4326)
+
+# CRS used in today's workshop dataset is Amersfoort / RD New (EPSG:28992)
+
+# Public Register - European Petroleum Survey Group (EPSG) has 7,000 + CRS systems (epsg.org)
+# https://epsg.org/home.html
+# each CRS has a unique EPSG code
+
+# Map Scale - measures the ratio between distance on a map and the corresponding distance on the ground
+
+# Vector Data, Raster Data
+# Vector Data represents discrete features using geometry
+# Vectors - points, lines, polygons to represent features on the Earth
+# Vectors - shapefiles, geojson, geopackage, kml (google earth)
+
+# Raster Data - continuous or grid data using pixals
+# temperature, elevation, gradient
+
+
+
+
+
+
+
+
+
+
 
 
