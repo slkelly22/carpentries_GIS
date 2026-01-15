@@ -278,3 +278,262 @@ st_bbox(lines_Delft)
 st_bbox(points_Delft)
 
 # Ending at 2:45
+
+### DAY 2 ### 
+# people were still floating in at 8:45
+# 14 attendees (Day 1: we had 13 in the AM but 14 in the PM)
+
+# Shelby # 
+# reviewing from yesterday
+
+st_geometry_type(lines_Delft)[1]
+
+# new content
+ncol(lines_Delft)
+names(lines_Delft)
+head(lines_Delft$highway, 10)
+
+View(lines_Delft)
+glimpse(lines_Delft)
+
+unique(lines_Delft$highway)
+
+# turn into a factor and see the levels
+factor(lines_Delft$highway) |> 
+  levels()
+# talk to neighbor; what's difference between factor and categorical here
+
+sum(is.na(lines_Delft)) # sk
+
+# Challenge Activity
+points_Delft
+nrow(points_Delft)
+glimpse(points_Delft)
+factor(points_Delft$leisure) |> levels()
+unique(points_Delft$leisure)
+
+# subset lines data
+cycleways_Delft <- lines_Delft |> 
+  filter(highway == "cycleway")
+
+# original data
+nrow(lines_Delft)
+# data subset
+nrow(cycleways_Delft)
+
+# calculate the length of pathways
+cycleways_Delft <- cycleways_Delft |> 
+  mutate(length = st_length(geometry))
+
+cycleways_Delft |> 
+  summarize(total_length = sum(length) / 1000) # in km
+
+# plotting the cycleways
+ggplot(data = cycleways_Delft) + 
+  geom_sf() + 
+  labs(title = "Slow mobility network in Delft", 
+       subtitle = "Cycleways") + 
+  coord_sf(datum = st_crs(28992)) # convo: why do we need this? b/c without it the axes are lat/long
+
+# Challenge Activity
+# Repeat what we just did but with motorways
+# was helping so wasn't following here
+unique(lines_Delft$highway) # called "motorway"
+motorway_Delft <- lines_Delft |> 
+  filter(highway == "motorway")
+
+# customize plots
+road_types <- c("motorway", "primary", "secondary", "cycleway")
+road_types
+
+lines_Delft_selection <- lines_Delft |> 
+  filter(highway %in% road_types) |> 
+  mutate(highway = factor(highway, levels = road_types))
+
+str(lines_Delft_selection)
+
+road_colors <- c("blue", "green", "navy", "purple")
+
+ggplot(data = lines_Delft_selection) + 
+  geom_sf(aes(color = highway)) + 
+  scale_color_manual(values = road_colors) + 
+  labs(color = "Road Type", 
+       title = "Mobility Network of Delft", 
+       subtitle = "Main Roads & Cycleways") + 
+  coord_sf(datum = st_crs(28992))
+
+# Change the line widths (challenge but did together)
+
+line_widths <- c(1, 0.75, 0.5, 0.25)
+
+ggplot(data = lines_Delft_selection) + 
+  geom_sf(aes(color = highway, linewidth = highway)) + 
+  scale_color_manual(values = road_colors) + 
+  scale_linewidth_manual(values = line_widths) +
+  labs(color = "Road Type", 
+       title = "Mobility Network of Delft", 
+       subtitle = "Main Roads & Cycleways", 
+       linewidth = "Road Type") + 
+  coord_sf(datum = st_crs(28992))
+
+# Challenge
+# Plot that emphasizes only roads were bikes are allowed
+lines_Delft_bicycle <- lines_Delft |> 
+  filter(highway == "cycleway")
+
+ggplot(data = lines_Delft) + 
+  geom_sf() + 
+  geom_sf(
+    data = lines_Delft_bicycle, 
+    aes(color = highway), linewidth = 1) + 
+  scale_color_manual(values = "magenta") + 
+  labs(
+    title = "Mobility netowork in Delft", 
+    subtitle = "Roads dedicated to Bikes") + 
+  coord_sf(datum = st_crs(28992))
+
+# Episode 8
+# Multiple vector layers
+
+ggplot() + 
+  geom_sf(
+    data = boundary_Delft, 
+    fill = "lightgrey",
+    color = "lightgrey") +
+  geom_sf(data = lines_Delft_selection, 
+          aes(color = highway), size = 1) + 
+  geom_sf(data = points_Delft) + 
+  labs(title = "Mobility network of Delft") + 
+  coord_sf(datum = st_crs(28992))
+
+# what happens if your switch the order ...
+ggplot() + 
+  geom_sf(data = lines_Delft_selection, 
+          aes(color = highway), size = 1) + 
+  geom_sf(
+    data = boundary_Delft, 
+    fill = "lightgrey",
+    color = "lightgrey") +
+  geom_sf(data = points_Delft) + 
+  labs(title = "Mobility network of Delft") + 
+  coord_sf(datum = st_crs(28992)) # yup, wrong!
+
+# someone asking about the default line size
+# Shelby showing the vignette for ggplot aesthetics
+vignette("ggplot2-specs", package = "ggplot2")
+
+# now going to customize the points
+unique(points_Delft$leisure)
+
+# she skipped the rainbow function to create colors
+# going back to do that to answer a question
+
+leisure_colors <- rainbow(15)
+
+ggplot() + 
+  geom_sf(data = boundary_Delft, 
+          fill = "lightgrey", 
+          color = "lightgrey") + 
+  geom_sf(data = lines_Delft_selection, aes(color = highway), size = 1) + 
+  geom_sf(data = points_Delft, aes(fill = leisure), shape = 21) + 
+  scale_color_manual(values = road_colors, name = "Road Type") + 
+  scale_fill_manual(values = leisure_colors, name = "Leisure Location") + 
+  labs(title = "Mobility network and leisure in Delft")
+  
+# SK: theme(legend.position = "none")
+
+# Challenge Activity: with picnic tables and playgrounds
+leisure_locations_selection <- points_Delft |> 
+  filter(leisure %in% c("playground", "picnic_table"))
+
+ggplot() + 
+  geom_sf(data = lines_Delft_selection, 
+          aes(color = highway)) + 
+  geom_sf(data = leisure_locations_selection, 
+          aes(fill = leisure, shape = leisure)) + 
+  scale_shape_manual(
+    name = "Leisure Type", 
+    values = c(21, 22)) + 
+  scale_color_manual(
+    name = "Line Type", 
+    values = road_colors) + 
+  scale_fill_manual(
+    name = "Leisure Type", 
+    values = c("cornflowerblue", "darkorange")) + 
+  labs(title = "Road network and leisure") + 
+  coord_sf(datum = st_crs(28992)) + 
+  theme_classic() # adding a theme to change background
+
+# Savannah Teaching # 
+
+# Lesson 9 - then lunch then back to show ggspatial and how to export shapefile
+# from audience to add scales to plots
+install.packages("ggspatial")
+library(ggspatial)
+# annotation_scale()
+# annotation_north_arrow()
+
+# Open Street Maps 
+library(osmdata)
+
+# bounding box - four coordinates that form a rectangle
+bb <- osmdata::getbb("Brielle")
+x <- opq(bbox = bb) |> 
+  add_osm_feature(key = "building") |> 
+  osmdata_sf()
+
+str(x)  
+str(x$osm_polygons)
+
+buildings <- x$osm_polygons |> 
+  st_transform(crs = 28992)
+
+start_date <- as.numeric(buildings$start_date)
+
+buildings$build_date <- if_else(start_date < 1900, 1900, start_date)
+
+# plot
+ggplot(data = buildings) + 
+  geom_sf(aes(fill = build_date, color = build_date)) + 
+  scale_fill_viridis_c() +
+  scale_color_viridis_c() + 
+  coord_sf(datum = st_crs(28992))
+
+# creating a function
+extract_buildings <- function(cityname, year = 1900) {
+  bb <- getbb(cityname)
+  
+  x <- opq(bbox = bb) |> 
+    add_osm_feature(key = "building") |> 
+    osmdata_sf()
+  
+  buildings <- x$osm_polygons |> 
+    st_transform(crs = 28992)
+  
+  start_date <- as.numeric(buildings$start_date)
+  
+  buildings$build_date <- if_else(start_date < year, year, start_date)
+  ggplot(data = buildings) + 
+    geom_sf(aes(fill = build_date, color = build_date)) + 
+    scale_fill_viridis_c() + 
+    scale_color_viridis_c() + 
+    ggtitle(paste0("Old Buildings in ", cityname)) + 
+    coord_sf(datum = st_crs(28992))
+}
+
+extract_buildings("Brielle, NL")
+extract_buildings()
+
+install.packages("leaflet")
+library(leaflet)
+
+buildings2 <- buildings |>
+  st_transform(crs = 4326)
+
+# I'm stopping here my brain is dead
+leaflet(buildings2) |>  addProviderTiles(providers$CartoDB.Positron) |>  addPolygons(    color = "#444444",    weight = 0.1,    smoothFactor = 0.5,    opacity = 0.2, fillOpacity = 0.8,    fillColor = ~ colorQuantile("YlGnBu", -build_date)(-build_date),    highlightOptions = highlightOptions(      color = "white", weight = 2,      bringToFront = TRUE    )  )
+
+# pulling out Oxford via OSM 
+extract_buildings("38655") 
+
+# Savannah - quick intro to raster data # 
